@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js">
+        </script>
+        <script src="tmi.min.js">
+        </script>
+        <style>
+			body{overflow:hidden;}
+		
+			.emoteSpawnerBox{
+			position: absolute;
+			width:10px;
+			height:10px;
+			overflow: visible;
+			}
+			
+			.emoteSpawner{
+			position: absolute;
+			width:0px;
+			height:0px;
+			overflow: visible;
+			}
+			
+            .emote {
+            width: 5vw;
+            height: 6vw;
+            font-size: 4vw;
+            overflow: hidden;
+            cursor: pointer;
+			animation: spinAway;
+			animation-duration: 4s;
+            animation-timing-function: linear;
+			animation-fill-mode: forwards;
+			margin-left: -3vw;
+			margin-top: -0.1vw;
+            }
+            
+            .emote img {
+            width: 75%;
+            padding: 12%;			            
+            }
+            ::selection {
+            color: none;
+            background: none;
+            }
+            .translucent{
+            opacity: 0.3;
+            }
+            
+            @keyframes spinAway {
+            0% {transform: translateY(-10px) rotate(720deg); opacity: 1;}
+            100% {transform: translateY(1000px) rotate(0deg); opacity:0;} }  
+            
+        </style>
+    </head>
+    
+    <body></body>
+    
+    <script type="text/javascript">
+// Example: limit the output of this computation to between 0 and 255
+// (x * 255).clamp(0, 255)
+Number.prototype.clamp = function (min, max) {
+    return Math.min(Math.max(this, min), max);
+};
+
+//random numbers innit
+function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+const emoteRegex = /(?:[\u2700-\u27bf]|(?:\ud83c[\udde6-\uddff]){2}|[\ud800-\udbff][\udc00-\udfff]|[\u0023-\u0039]\ufe0f?\u20e3|\u3299|\u3297|\u303d|\u3030|\u24c2|\ud83c[\udd70-\udd71]|\ud83c[\udd7e-\udd7f]|\ud83c\udd8e|\ud83c[\udd91-\udd9a]|\ud83c[\udde6-\uddff]|[\ud83c[\ude01-\ude02]|\ud83c\ude1a|\ud83c\ude2f|[\ud83c[\ude32-\ude3a]|[\ud83c[\ude50-\ude51]|\u203c|\u2049|[\u25aa-\u25ab]|\u25b6|\u25c0|[\u25fb-\u25fe]|\u00a9|\u00ae|\u2122|\u2139|\ud83c\udc04|[\u2600-\u26FF]|\u2b05|\u2b06|\u2b07|\u2b1b|\u2b1c|\u2b50|\u2b55|\u231a|\u231b|\u2328|\u23cf|[\u23e9-\u23f3]|[\u23f8-\u23fa]|\ud83c\udccf|\u2934|\u2935|[\u2190-\u21ff])+/
+const digitRegex = /\s\d+\b/;
+
+let channel = new URLSearchParams(window.location.search).get("channel") ?? "gantee"; 
+
+// Define configuration options
+const opts = {
+    channels: [
+        channel
+    ]
+};
+
+// Create a client with our options
+let client = new tmi.client(opts);
+
+// Register our event handlers (defined below)
+client.on('message', onMessageHandler);
+client.on('connected', onConnectedHandler);
+
+// Connect to Twitch:
+client.connect();
+
+userEmoteTimes = {};
+
+function explodeEmote(emoteInnards, userId, number) {
+	if ($(`#${userId}`).length)
+		return;
+	
+    $("body").append("<div id=" + userId + " class='emoteSpawnerBox' style='left: " + getRandomInt(400, 1520) + "px; top: " + getRandomInt(200, 820) + "px;'></div>");
+    let spawner = $(`#${userId}`);
+    let timesToTrigger = number.clamp(1, 2000);
+    let timesTriggered = 0;
+
+    let interval = setInterval(function () {
+        for (let i = 0; i < 10; i++) {
+            if (timesTriggered >= timesToTrigger) {
+                clearInterval(interval);
+				setTimeout(x=>spawner.remove(),5000);
+                continue;
+            }
+            spawner.append("<div class='emoteSpawner' style='transform: rotate(" + getRandomInt(0, 360) + "deg)'><div class='emote'>" + emoteInnards + "</div></div>");
+            timesTriggered++;
+        }
+    }, 150);
+}
+
+// Called every time a message comes in
+function onMessageHandler(target, context, msg, self) {
+    // Remove whitespace from chat message
+    const message = msg.trim();
+
+    // If the command is known, let's execute it
+    if (message.startsWith("!e")) {
+
+        let userId = context["user-id"];
+        let emoteInnards;
+		let amount = 100;
+
+        //if we find an emoji, use that
+        if (emoteRegex.test(message)) {
+            let match = emoteRegex.exec(message);
+			if(match !== null)
+				emoteInnards = match;
+        } // else if we find a twitch emote, use that
+        if (context["emotes"]) {
+            let emote = Object.keys(context["emotes"])[0];
+            emoteInnards = "<img src=\"http://static-cdn.jtvnw.net/emoticons/v2/" + emote + "/default/dark/2.0\">";
+        }
+		if(digitRegex.test(message)){
+			let digitsMatch = parseInt(digitRegex.exec(message));
+			if(digitsMatch !== NaN)
+			amount = digitsMatch;
+		}
+		if(emoteInnards)
+			explodeEmote(emoteInnards, context["user-id"],amount);
+    }
+}
+
+function onConnectedHandler(addr, port) {
+    console.log(`* Connected to ${addr}:${port}`);
+}
+
+    </script>    
+</html>
