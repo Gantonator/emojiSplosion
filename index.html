@@ -8,37 +8,39 @@
         <style>
 			body{overflow:hidden;}
 
-			.emoteSpawnerBox{
+			.emoteSpawnerBox {
 				position: absolute;
-				width:10px;
-				height:10px;
+				width:1px;
+				height:1px;
 				overflow: visible;
 			}
 
-			.emoteSpawner{
+			.emoteSpawner {
 				position: absolute;
 				width:0px;
 				height:0px;
 				overflow: visible;
+				transform-origin: center;
 			}
 
 			.emote {
-				width:64px;
-				height: 64x;
-				font-size: 4vw;
+				width: 80px;
+				height: 80px;
+				font-size: 1.5vw;
 				overflow: hidden;
 				cursor: pointer;
 				animation: spinAway;
-				animation-duration: 8s;
+				animation-duration: 5s;
 				animation-timing-function: linear;
 				animation-fill-mode: forwards;
 				margin-left: -3vw;
 				margin-top: -0.1vw;
+				transform-origin: center;
 			}
 
 			.emote img {
-				width: 75%;
-				padding: 12%;			            
+				width: 50%;
+				padding: 50%;			            
 			}
 			::selection {
 				color: none;
@@ -49,8 +51,10 @@
 			}
 
 			@keyframes spinAway {
-			0% {transform: translateY(-10px) rotate(720deg) scale(1, 1); opacity: 1;}
-			100% {transform: translateY(1000px) rotate(0deg) scale(2, 2); opacity:0;} }  
+				0% {transform: translateY(-10px) rotate(900deg) scale(1, 1); opacity: 1;}
+				50% {transform: translateY(800px) rotate(450deg) scale(4, 4); opacity: 0.7;}
+				100% {transform: translateY(2000px) rotate(0deg) scale(5, 5); opacity:0;} 
+			}			
         </style>
     </head>
     
@@ -98,22 +102,22 @@
 			if ($(`#${userId}`).length)
 				return;
 			
-			$("body").append("<div id=" + userId + " class='emoteSpawnerBox' style='left: " + getRandomInt(400, 1520) + "px; top: " + getRandomInt(200, 820) + "px;'></div>");
+			$("body").append("<div id=" + userId + " class='emoteSpawnerBox' style='left: " + getRandomInt(20, 80) + "%; top: " + getRandomInt(20, 80) + "%;'></div>");
 			let spawner = $(`#${userId}`);
-			let timesToTrigger = number.clamp(1, 2000);
+			let timesToTrigger = number.clamp(1, 500);
 			let timesTriggered = 0;
 
 			let interval = setInterval(function () {
-				for (let i = 0; i < 10; i++) {
+				for (let i = 0; i < 1; i++) {
 					if (timesTriggered >= timesToTrigger) {
 						clearInterval(interval);
-						setTimeout(x=>spawner.remove(), 10000);
+						setTimeout(x=>spawner.remove(), 6000);
 						continue;
 					}
-					spawner.append("<div class='emoteSpawner' style='transform: rotate(" + getRandomInt(0, 360) + "deg)'><div class='emote'>" + emoteInnards + "</div></div>");
+					spawner.append("<div class='emoteSpawner' style='transform-origin: center; transform: rotate(" + getRandomInt(0, 360) + "deg)'><div class='emote'>" + emoteInnards + "</div></div>");
 					timesTriggered++;
 				}
-			}, 150);
+			}, 20);
 		}
 
 		// Called every time a message comes in
@@ -130,20 +134,24 @@
 				//if we find an emoji, use that
 				if (emoteRegex.test(message)) {
 					let match = emoteRegex.exec(message);
-					if(match !== null)
-						emoteInnards = match;
-				} // else if we find a twitch emote, use that
+					if (match !== null) emoteInnards = match;
+				} 
+				
+				// else if we find a twitch emote, use that
 				if (context["emotes"]) {
 					let emote = Object.keys(context["emotes"])[0];
 					emoteInnards = "<img src=\"http://static-cdn.jtvnw.net/emoticons/v2/" + emote + "/default/dark/2.0\">";
 				}
-				if(digitRegex.test(message)){
+				
+				if (digitRegex.test(message)) {
 					let digitsMatch = parseInt(digitRegex.exec(message));
 					if(digitsMatch !== NaN)
 					amount = digitsMatch;
 				}
-				if(emoteInnards)
+				
+				if (emoteInnards) {
 					explodeEmote(emoteInnards, context["user-id"],amount);
+				}
 			}
 		}
 
